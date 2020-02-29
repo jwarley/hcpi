@@ -133,7 +133,10 @@ mod tests {
             .collect();
         dbg!(our_probs.clone());
         dbg!(data.test_policy_probs.clone());
-        assert!(our_probs == data.test_policy_probs.clone());
+        for (ours, theirs) in our_probs.iter().zip(data.test_policy_probs.clone()) {
+            dbg!(f64::abs((ours - theirs) / theirs));
+            assert!(f64::abs((ours - theirs) / theirs) <= 1e-5);
+        }
     }
 
     #[test]
