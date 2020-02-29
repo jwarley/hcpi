@@ -32,7 +32,9 @@ See p. 151 of the [course notes](https://people.cs.umass.edu/~pthomas/courses/CM
 # Steps to Run
 1. [Install Rust.](https://www.rust-lang.org/tools/install)
 2. This project depends on FFI bindings into the GNU Scientific Library. Most package managers bundle GSL, so installing it should be painless. A scary compile error from the HCPI code probably means that rustc can't find the GSL.
-3. In the top level of the source directory (the level containing `Cargo.toml`), run `cargo run --release`. The crate should compile without warnings.
+3. (Optional) Run `cargo test` to test that the data file is internally consistent and the HCPI policy representation matches the behavior policy representation.
+4. In the top level of the source directory (the level containing `Cargo.toml`), run `cargo run --release`. The crate should compile without warnings.
+
 
 Note: In the working directory, `main.rs` will create a top-level directory called `output`, which will be populated with improved policies as they are found. The code will panic and prompt you to delete the `output` directory if it already exists, in order to avoid overwriting improved policies from a previous run.
 
