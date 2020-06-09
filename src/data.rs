@@ -1,4 +1,6 @@
+extern crate ndarray;
 use crate::mdp::{History, Policy};
+use ndarray::prelude::*;
 use rand::seq::SliceRandom;
 use rayon::prelude::*;
 
@@ -9,9 +11,9 @@ use rayon::prelude::*;
 ///     policy, which are only used to test that our policy representation is correct.
 #[derive(Debug, Clone)]
 pub struct PolicyData {
-    pub state_dim: u8,
+    pub state_dim: u32,
     pub n_actions: u32,
-    pub fourier_deg: u8,
+    pub fourier_deg: u32,
     pub pi_b: Policy,
     pub num_eps: usize,
     pub hists: Vec<History>,
@@ -19,18 +21,6 @@ pub struct PolicyData {
 }
 
 impl PolicyData {
-    fn new() -> Self {
-        PolicyData {
-            state_dim: 0,
-            n_actions: 0,
-            fourier_deg: 0,
-            pi_b: Vec::new(),
-            num_eps: 0,
-            hists: Vec::new(),
-            test_policy_probs: Vec::new(),
-        }
-    }
-
     /// Read the policy data from a csv file
     pub fn from_file(path: &str) -> PolicyData {
         let mut rdr = csv::ReaderBuilder::new()
@@ -39,34 +29,48 @@ impl PolicyData {
             .from_path(path)
             .unwrap();
 
-        let mut pd = PolicyData::new();
-
         // Read the state dimension, action set size, and Fourier basis degree
-        pd.state_dim = rdr.records().next().unwrap().unwrap()[0].parse().unwrap();
-        pd.n_actions = rdr.records().next().unwrap().unwrap()[0].parse().unwrap();
-        pd.fourier_deg = rdr.records().next().unwrap().unwrap()[0].parse().unwrap();
+        let state_dim = rdr.records().next().unwrap().unwrap()[0].parse().unwrap();
+        let n_actions = rdr.records().next().unwrap().unwrap()[0].parse().unwrap();
+        let fourier_deg = rdr.records().next().unwrap().unwrap()[0].parse().unwrap();
 
         // Read the behavior policy parameters
-        let pi_b = rdr.records().next().unwrap().unwrap();
-        for weight in pi_b.into_iter() {
-            pd.pi_b.push(weight.trim().parse::<f64>().unwrap());
-        }
+        let pi_b: Array1<f64> = rdr
+            .records()
+            .next()
+            .unwrap()
+            .unwrap()
+            .into_iter()
+            .map(|x| x.trim().parse::<f64>().unwrap())
+            .collect();
 
         // Read the number of episodes and the history data
-        pd.num_eps = rdr.records().next().unwrap().unwrap()[0].parse().unwrap();
-        for _ in 0..pd.num_eps {
+        let num_eps = rdr.records().next().unwrap().unwrap()[0].parse().unwrap();
+        let mut hists = Vec::new();
+        for _ in 0..num_eps {
             let record = rdr.records().next().unwrap().unwrap();
-            pd.hists
-                .push(History::from_seq(record, pd.state_dim as u32))
+            hists.push(History::from_seq(record, state_dim))
         }
 
         // Read the behavior policy parameters
-        let pi_b_probs = rdr.records().next().unwrap().unwrap();
-        for p in pi_b_probs.into_iter() {
-            pd.test_policy_probs.push(p.trim().parse::<f64>().unwrap());
-        }
+        let test_policy_probs = rdr
+            .records()
+            .next()
+            .unwrap()
+            .unwrap()
+            .into_iter()
+            .map(|p| p.trim().parse::<f64>().unwrap())
+            .collect();
 
-        pd
+        Self {
+            state_dim,
+            n_actions,
+            fourier_deg,
+            pi_b,
+            num_eps,
+            hists,
+            test_policy_probs,
+        }
     }
 
     /// Compute the observed average return of pi_b

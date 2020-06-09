@@ -7,9 +7,12 @@ use mdp::FourierPolicy;
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    println!("Creating output directory for improved policies.");
+    println!("Creating output directories...");
     std::fs::create_dir("./output").expect(
         "Error: `output` directory already exists. Please remove it before generating new polcies.",
+    );
+    std::fs::create_dir("./failed").expect(
+        "Error: `failed` directory already exists. Please remove it before generating new polcies.",
     );
 
     // Read in the behavior policy data from a file and construct our policy representation.
@@ -20,16 +23,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Constructing behavior policy...");
     let pi_b = FourierPolicy::new(d.fourier_deg, d.state_dim, d.pi_b.clone(), d.n_actions);
 
-    // Generate 100 improved policies.
+    // Generate `N_DESIRED_POLICIES` improved policies.
     // This code will not count candidate policies that fail the safety test, i.e. it will run
-    // until 100 actual improved policies are found. Consequently, if the behavior policy is close
+    // until N actual improved policies are found. Consequently, if the behavior policy is close
     // to optimal or the amount of behavior data is small, this loop may run indefinitely.
     // The number of improved policies found will be printed at each search iteration so that the
-    // search progress can be monitored and halted if it's clear that improvements on the behaivor
+    // search progress can be monitored and halted if it's clear that improvements on the behavior
     // policy are rare.
+    const N_DESIRED_POLICIES: usize = 10;
     let mut search_iter = 0;
     let mut policies_found = 0;
-    while policies_found < 100 {
+    let mut failed = 0;
+
+    while policies_found < N_DESIRED_POLICIES {
         println!("===========================");
         println!("Beginning new policy search");
         println!("===========================\n");
@@ -43,35 +49,48 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("Size of candidate data: {}", num_cand);
         println!("Size of safety data: {}\n", num_safety);
 
-        // In this example, avg. return for pi_b looks low compared to sizes of some rewards, and I
-        // have outside knowledge suggesting the behavior policy is not very close to optimal. In
-        // this case, a target of 110% of the observed return is probably feasible, and may
-        // artificially boost the confidence bounds without computational overhead.
-        // In general, it's better to set the target to exactly the observed return.
-        let (target, delta) = (1.1 * d.pi_b_avg_return(), 0.05);
+        // We want a 90% chance of getting a better policy than pi_b
+        let (target, delta) = (d.pi_b_avg_return(), 0.10);
 
         // I'm making an assumption that we can do pretty well by searching over a bounded interval
         // of parameter space containing the original policy parameters.
         // I'm not aware of a principled way to choose the search interval for each policy
         // parameter in a general problem setting.
         let search_intervals = vec![(-50., 50.); pi_b.theta.len()];
+        let n_optim_iters = 500; // Number of iterations to run the black-box optimizer
+
         println!("Searching for improved policy parameters...");
-        let (_opt_val, theta_opt) =
-            select_candidate(&d_c, &pi_b, num_safety, target, delta, search_intervals);
+        let (opt_val, theta_opt) = select_candidate(
+            &d_c,
+            &pi_b,
+            num_safety,
+            target,
+            delta,
+            search_intervals,
+            n_optim_iters,
+        );
+        println!("Found a candidate with score {}", opt_val);
 
         println!("Running safety test on found policy...");
         let pi_opt = FourierPolicy::new(d.fourier_deg, d.state_dim, theta_opt, d.n_actions);
-        match safety_test(&d_s.hists, num_safety, &pi_opt, &pi_b, target, delta) {
-            SafetyResult::Good((theta, _)) => {
-                println!("New policy passed safety test!");
+        match safety_test(&d_s.hists, num_safety, &pi_opt, &pi_b, target, delta, false) {
+            SafetyResult::Good((theta, score)) => {
+                println!("New policy passed safety test! (score {})", score);
                 // Write the policy to a csv file
                 let mut wtr = csv::Writer::from_path(format!("output/{}.csv", policies_found + 1))?;
-                wtr.serialize(theta)?;
+                wtr.serialize(theta.to_vec())?;
                 wtr.flush()?;
                 policies_found += 1;
             }
-            SafetyResult::NSF(_) => {
-                println!("The found policy failed the safety test on the safety data.")
+            SafetyResult::NSF((theta, score)) => {
+                println!(
+                    "The found policy failed the safety test on the safety data. (score {})",
+                    score
+                );
+                let mut wtr = csv::Writer::from_path(format!("failed/{}.csv", failed + 1))?;
+                wtr.serialize(theta.to_vec())?;
+                wtr.flush()?;
+                failed += 1;
             }
         }
 
