@@ -44,7 +44,7 @@ The `tests` directory contains the following Python code, useful for testing the
 - `agents.py`, an implementation of a simple hill-climbing agent.
 - `policies.py`, an implementation of a Fourier-basis policy representation with softmax action selection.
 - `cartpole.py`, a script that trains a mediocre behavior policy on the OpenAI Gym `CartPole-v0` and then uses it to generate a dataset on which to run HCPI. The generated data file will be located at `datasets/cartpole_deg{k}_ret{R}_eps{N}.csv` where `k` is the Fourier basis order, `R` is a mean return of the behavior policy over a configurable number of episodes, and `N` is the number of histories in the dataset.
-- `eval.py`, a script that loads the baseline policy in `data.csv`, as well as all the policies in `output`, runs them all for a configurable number of episodes, saves the results to `tests/eval.csv`, plots them, and saves the plot to `eval.png`. An example plot is shown above.
+- `eval.py`, a script that loads the baseline policy in `data.csv`, as well as all the policies in `output`, runs them all for a configurable number of episodes, saves the results to `tests/eval.csv`, plots them, and saves the plot to `eval.png`.
 
 Running `cargo test` in the top-level directory will execute a Rust test that ensures the HCPI policy representation matches the  policy representation used to generate the dataset (this is what the last row of `data.csv` is for).
 
