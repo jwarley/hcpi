@@ -12,3 +12,6 @@ Cargo.lock
 output
 failed
 data.csv
+**/__pycache__
+tests/eval.csv
+eval.png
