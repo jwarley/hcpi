@@ -16,7 +16,7 @@ See also:
 - [Phil Thomas's 2019 RL Course Notes](https://people.cs.umass.edu/~pthomas/courses/CMPSCI_687_Fall2019/687_F19.pdf)
 - [UMass AI Safety Page](https://aisafety.cs.umass.edu/)
 
-# Input Data Format
+## Input Data Format
 The input data is stored in a CSV file in the `datasets` directory, containing the following rows:
 1. The number of state features.
 2. The number of actions.
@@ -28,7 +28,7 @@ The input data is stored in a CSV file in the `datasets` directory, containing t
 
 See p. 151 of the [course notes](https://people.cs.umass.edu/~pthomas/courses/CMPSCI_687_Fall2019/687_F19.pdf) for full details.
 
-# Running
+## Running
 1. [Install Rust.](https://www.rust-lang.org/tools/install)
 2. This project depends on FFI bindings into the GNU Scientific Library. Most package managers bundle GSL, so installing it should be painless. A scary compile error from the HCPI code probably means that rustc can't find the GSL.
 3. (Optional) Generate a new dataset using `tests/cartpole.py` or some analogous RL code of your own.
@@ -37,7 +37,7 @@ See p. 151 of the [course notes](https://people.cs.umass.edu/~pthomas/courses/CM
 
 Note: In the working directory, `main.rs` will create top-level directories called `output` and `failed`, which will be populated with CSV files containing policies as they are found. The code will panic and prompt you to delete these directories if they already exist, in order to avoid accidentally overwriting policies from a previous run.
 
-# Testing
+## Testing
 This repository includes the original CS687 dataset at `datasets/cs687.csv`. This dataset is small, so useful for testing that the code runs successfully, but it can't be used to validate the algorithm because the dynamics of the MDP that generated the data were not provided in the class. Larger datasets can be generated on CartPole using the provided tests. These will have much longer episode horizons and higher dimensionality than `cs687.csv`, so HCPI will take much longer to run. They are better for testing that the algorithm works, but worse for quickly testing that the code runs without errors.
 
 The `tests` directory contains the following Python code, useful for testing the behavior of the HCPI algorithm:
@@ -48,7 +48,7 @@ The `tests` directory contains the following Python code, useful for testing the
 
 Running `cargo test` in the top-level directory will execute a Rust test that ensures the HCPI policy representation matches the  policy representation used to generate the dataset (this is what the last row of `data.csv` is for).
 
-# Limitations
+## Limitations
 - While HCPI works in a more general setting, this code only handles Fourier policies over finite action spaces.
 - This code was written to solve a specific problem, and makes no attempt to provide a general library API.
 - Consequently, some hyperparameters or constants may be hard-coded, though this should be mostly confined to `main.rs`.
